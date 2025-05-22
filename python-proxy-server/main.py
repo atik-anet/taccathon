@@ -10,7 +10,7 @@ app = FastAPI()
 
 # code.
 @app.get("/read/")
-def read_file(file_path: str ) -> str:
+def read_file(file_path: str ):
    """
    Reads the content of a file using helper API( GetFileContent ).
 
@@ -20,12 +20,12 @@ def read_file(file_path: str ) -> str:
    Returns:
       The file content or an error message.
    """
-   ps = PackageSearcher()
+   ps = PackageSearcher('eos-trunk','PmtBatt')
    return ps.GetFileContent( file_path )
 
 # symbol defination
 @app.get("/search/definition/")
-async def get_symbol_definiton(symbolName:str ) -> str:
+async def get_symbol_definiton(symbolName:str ):
    """
    Returns list of files contain function/class defination.
 
@@ -35,14 +35,17 @@ async def get_symbol_definiton(symbolName:str ) -> str:
    Returns:
       jsonResponse (dict): JSON response, or None if there was an error. 
    """
-   ps = PackageSearcher()
-   #  parse response to give only filename, linenumber
-   result= grok.doGrokRequest( defination=symbolName )
-   return result
+   try:
+      ps = PackageSearcher('eos-trunk','PmtBatt')
+      #  parse response to give only filename, linenumber
+      result= grok.doGrokRequest( definition=symbolName )
+      return result
+   except Exception as e:
+        return f"Error symbol definition: {str(e)}"
 
 # symbol search in path
 @app.get("/search/symbol/")
-def searchSymbolInPath(path:str, symbol: str ) ->  list[ str ]:
+def searchSymbolInPath(path:str, symbol: str ):
    """
    Search symbol in the given directory/file path.
     
@@ -53,11 +56,11 @@ def searchSymbolInPath(path:str, symbol: str ) ->  list[ str ]:
    Returns:
       A list of all the filenames in the given path matching the symbol,if provided. 
    """
-   ps = PackageSearcher()
+   ps = PackageSearcher('eos-trunk','PmtBatt')
    return ps.GetFileNamesInPath( path, symbol )
 
 @app.get("/tree")
-def get_tree_folders(directory: str) -> Any:
+def get_tree_folders(directory: str):
     """
     Returns the directory tree structure using the 'tree' command.
     
