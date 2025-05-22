@@ -12,25 +12,25 @@ async def root():
     return {"message": "Hello World"}
 
 # Create an MCP server
-mcp = FastMCP("Demo")
+mcp = FastMCP("AristaCodeAssist")
 
 @mcp.tool()
-async def get_tree_folders(directory: str) -> str:
+async def get_tree_folders(path: str):
     """
-    Get the directory tree structure of a given directory.
+    Get the directory tree structure of a given directory path.
     
     Args:
-        directory: The directory path to explore.
+        path: The directory path to explore.
     
     Returns:
-        The text output of the 'tree' command representing the directory structure.
+        The json output of the 'tree' command representing the directory structure.
     """
-    url = f"http://{ip}:{port}/tree?directory=SandTunnel"
+    url = f"http://{ip}:{port}/tree?directory={path}"
 
     try:
-        response = requests.get(url)  # or requests.post(url, json=payload) if it requires POST
-        response.raise_for_status()  # Raises HTTPError if the response was an error
-        data = response.json()  # or response.text if the response isn't JSON
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
         return data
     except requests.exceptions.RequestException as e:
        print(e)
@@ -38,17 +38,74 @@ async def get_tree_folders(directory: str) -> str:
        return {"exception":"couldnot find"}
 
 @mcp.tool()
-async def get_weather(city: str) -> str:
+def read_file(file_path: str ):
     """
-     Get the weather information for a specified city.
+    Reads the content of a file using get request.
 
-     Args:
-         city (str): The name of the city to get weather information for.
+    Args:
+        file_path: Absolute or relative file path.
+        
+    Returns:
+        The file content in json format or an error message.
+    """
+    file_path = file_path.split('/')
+    final_file_path = '/'.join(file_path[4:])
+    url = f"http://{ip}:{port}/read?file_path={final_file_path}"
+    try:
+        response = requests.get(url) 
+        response.raise_for_status() 
+        data = response.json()
+        return data
+    except requests.exceptions.RequestException as e:
+       print(e)
+       print(url)
+       return {"exception":"couldnot find"}
+   
+@mcp.tool()
+async def get_symbol_definiton(symbolName:str ):
+    """
+    Reads the list of files contains symbol(function/class) defination 
+        using get request.
 
-     Returns:
-         str: A message containing the weather information for the specified city.
-     """
-    return f"The weather in {city} is sunny."
+    Args:
+        symbolName: Name of the function/class.
 
+    Returns:
+        jsonResponse (dict): JSON response, or None if there was an error. 
+    """
+    url = f"http://{ip}:{port}/search/definition?symbolName={symbolName}"
+    try:
+        response = requests.get(url) 
+        response.raise_for_status() 
+        data = response.json()
+        return data
+    except requests.exceptions.RequestException as e:
+       print(e)
+       print(url)
+       return {"exception":"couldnot find"}
+
+@mcp.tool()
+def searchSymbolInPath(path:str, symbol: str ):
+    """
+    Search symbol(function/class/attribute) in the given directory/file path.
+    
+    Args:
+        path: The directory/file path to explore.
+        symbol: symbol to search in the provided path argument.
+    
+    Returns:
+        A list of all the filenames in the given path matching the symbol in json 
+        format. 
+    """
+    url = f"http://{ip}:{port}/search/symbol?path={path}&symbol={symbol}"
+    try:
+        response = requests.get(url) 
+        response.raise_for_status() 
+        data = response.json()
+        return data
+    except requests.exceptions.RequestException as e:
+       print(e)
+       print(url)
+       return {"exception":"couldnot find"}
 
 app.mount("/", mcp.sse_app())
