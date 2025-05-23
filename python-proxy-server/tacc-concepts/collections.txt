@@ -1,0 +1,345 @@
+Collections
+The size of a collection
+A collection attribute with the name attr will generate a member function attrs() (note the "s") which returns the size of the collection.
+
+For example, given this type
+
+
+
+arcg
+Size.tac
+MyType1 : Tac::Type() : Tac::PtrInterface {
+   item : U32[ U16 ];
+}
+the size of the item collection can be accessed in C++ like this:
+
+
+g++
+#include "Size.h"
+
+int main() {
+   MyType1::Ptr myType = Tac::allocate< MyType1 >();
+   std::cout << "There are " << myType->items() << " items\n";
+}
+Externally-keyed collections
+Externally-keyed collections use a key type that is external to the type stored in the collection.
+
+
+
+arcg
+External.tac
+MyType2 : Tac::Type() : Tac::PtrInterface {
+   // A collection of `U32` keyed by `U16`.
+   record : U32[ U16 ];
+   // An ordered collection of `U64` keyed by `Tac::String`.
+   age : ordered U64[ Tac::String ];
+}
+For example:
+
+
+g++
+#include "External.h"
+
+int main() {
+   MyType2::Ptr myType = Tac::allocate< MyType2 >();
+
+   // Insert 10 with the key "joe".
+   myType->ageIs( "joe", 10 );
+
+   // Delete the value with the key 0.
+   myType->recordDel( 0 );
+
+   // Delete all values.
+   myType->recordDelAll();
+
+   // Print every value in the `record` collection.
+   for ( auto iter : myType->recordIteratorConst() ) {
+      std::cout << *iter << '\n';
+   }
+
+   // Access a collection value.
+   std::cout << myType->age( "joe" ) << '\n';
+}
+Internally-keyed collections
+Internally-keyed collections use a specific attribute of a type as the key. This is useful because no additional storage is necessary for the key: it's already stored as part of the collection value.
+
+
+
+arcg
+Internal.tac
+Value : Tac::Type( a ) : Tac::PtrInterface {
+   a : U32;
+   b : U32;
+}
+MyType3 : Tac::Type() : Tac::PtrInterface {
+   // A collection of pointers to `Value`, keyed by its `a` attribute.
+   //
+   // The `a` attribute must be a constructor argument of `Value` and must be
+   // immutable.
+   record : Value::Ptr[ a ];
+}
+Instantiating and non-instantiating collections
+An instantiating collection is one that creates new instances of pointer types (like Entity or PtrInterface). A non-instantiating collection stores pointers to instances that were created elsewhere.
+
+An instantiating collection must always be internally-keyed.
+
+For example:
+
+
+
+arcg
+Instantiating.tac
+MyRecord1 : Tac::Type( name ) : Tac::PtrInterface {
+   `isNotifyingByDefault;
+   name : Tac::String;
+   a : U32;
+   b : U32;
+   c : U32;
+}
+MyType4 : Tac::Type() : Tac::PtrInterface {
+   // An instantiating collection.
+   foo : MyRecord1[ name ];
+   // A non-instantiating collection.
+   bar : MyRecord1::Ptr[ name ];
+}
+and in C++:
+
+
+g++
+#include "Instantiating.h"
+
+int main() {
+   MyType4::Ptr myType = Tac::allocate< MyType4 >();
+
+   // Instantiate a new instance of `MyRecord1` and insert it into the collection.
+   myType->fooIs( "first" );
+
+   // Add a pointer to the instance to the `bar` collection.
+   myType->barIs( myType->foo( "first" ) );
+}
+Fixed-size arrays
+In the following type definition, MyType5::entry is an array of U32 values with valid indices ranging from 32 to 40 (both inclusive). Storage will be allocated for 40 - 32 + 1 = 9 values.
+
+
+
+arcg
+Array.tac
+Index : Tac::Type( value ) : Tac::Nominal, U8 {
+   value {
+      `range = 32 .. 40;
+   }
+}
+MyType5 : Tac::Type() : Tac::PtrInterface {
+   entry : array U32[ Index ];
+}
+Here is an example of using the array from C++
+
+
+g++
+#include "Array.h"
+
+int main() {
+   MyType5::Ptr myType = Tac::allocate< MyType5 >();
+
+   // Accessing an entry requires first creating an instance of `Index`.
+   //
+   // Set the entry at index 32 to 400, and then read it back.
+   myType->entryIs( Index{ 32 }, 400 );
+   std::cout << "The value at 32 is " << myType->entry( Index{ 32 } ) << '\n';
+
+   // An exception is thrown when an out-of-bounds `Index` is created.
+   try {
+      Index{ 20 };
+      tacAssert( false );
+   } catch ( Tac::RangeException const & e ) {
+      std::cout << e.what() << '\n';
+   }
+}
+Stacks
+
+
+arcg
+Stack.tac
+MyRecord2 : Tac::Type( name ) : Tac::PtrInterface {
+   name : Tac::String;
+   scope : stack Tac::String[];
+}
+In C++:
+
+
+g++
+#include "Stack.h"
+
+int main() {
+   MyRecord2::Ptr myRecord = Tac::allocate< MyRecord2 >( "foo" );
+
+   // Push onto the top of the stack.
+   myRecord->scopePush( "foo" );
+
+   // Pop from the top of the stack.
+   myRecord->scopePop();
+
+   std::cout << "There are " << myRecord->scopes() << " scopes\n";
+}
+Queues
+
+
+arcg
+Queue.tac
+MyRecord3 : Tac::Type( name ) : Tac::PtrInterface {
+   name : Tac::String;
+   job : queue U32[];
+}
+In C++:
+
+
+g++
+#include "Queue.h"
+
+int main() {
+   MyRecord3::Ptr myRecord = Tac::allocate< MyRecord3 >( "foo" );
+
+   // Enqueue a job at at the back.
+   myRecord->jobEnq( 100 );
+
+   // Dequeue a job from the front.
+   std::cout << "The latest job ID is " << myRecord->jobDeq() << '\n';
+}
+There is no way to specify the priority of values in a queue. An ordered collection may be an acceptable alternative.
+
+Sets
+
+
+arcg
+Set.tac
+MyRecord4 : Tac::Type( name ) : Tac::PtrInterface {
+   // A set of `U32`.
+   name : Tac::String;
+   id : set void[ U32 ];
+}
+In C++:
+
+
+g++
+#include "Set.h"
+
+int main() {
+   MyRecord4::Ptr myRecord = Tac::allocate< MyRecord4 >( "foo" );
+
+   // Add to the set.
+   myRecord->idIs( 5 );
+
+   // Remove from the set.
+   myRecord->idDel( 5 );
+
+   // Check for membership.
+   if ( myRecord->idHas( 10 ) ) {
+      std::cout << "Found id: 10\n";
+   }
+
+   std::cout << "There are " << myRecord->ids() << " IDs\n";
+}
+Iterators
+Iterators over TAC collections provide much stronger guarantees than iterators in the C++ standard library. Iterators are not invalidated upon modification of the collection.
+
+For example, it is safe to delete values from the collection while iterating over it: no values are missed.
+
+
+g++
+#include "Internal.h"
+
+void
+doSomething( Value const & ) {
+   // Nothing.
+}
+
+int main() {
+   MyType3::Ptr myType = Tac::allocate< MyType3 >();
+
+   for ( auto iter = myType->recordIteratorConst(); iter; ++iter ) {
+      if ( iter.key() % 2 == 0 ) {
+         doSomething( *iter.ptr() );
+         myType->recordDel( iter.key() );
+      }
+   }
+}
+For more details and examples please see AID 7104.
+
+Output iterators for C++ algorithms
+The standard library provides the std::back_inserter() and std::inserter() functions to create output iterators which insert into collections like std::vector.
+
+The TacCollInserter() macro is similar, except that more information is necessary when invoking it in order to interoperate with the notification mechanism of the framework.
+
+
+g++
+#include "Instantating.h"
+
+int main() {
+   MyType4::Ptr myType = Tac::allocate< MyType4 >();
+   std::vector< std::string > names{ "foo", "bar", "baz" };
+   std::copy( names.begin(), names.end(), TacCollInserter( *myType, fooIs ) );
+   // which is semantically equivalent to the following:
+   // myType->fooIs("foo"s);
+   // myType->fooIs("bar"s);
+   // myType->fooIs("baz"s);
+}
+The user should be cognizant about the number of inserts they perform without yielding, as each insertion may potentially notify all the reactors of the collection. One 'workaround' is making the reactors to the collection that the output iterator is modifying use a CODEF. Then the risk of spending a large amount of time inserting into the collection is somewhat mitigated. For more details on CODEFs please see AID 832.
+
+TacCollInserter is a preprocessor macro that reduces redundancy when creating pointer to member functions by eliminating the need to spell out the containing entity's type name. If desired, the pointer to member function can be referenced directly in the the underlying Tac::CollInserter insert iterator constructor call.
+
+
+g++
+#include "Instantiating.h"
+
+int main() {
+   MyType4::Ptr myType = Tac::allocate< MyType4 >();
+   std::vector< std::string > names{ "foo", "bar", "baz" };
+   std::copy(
+      names.begin(), names.end(), Tac::CollInserter( *myType, &MyType4::fooIs ) );
+}
+The insert iterator can be created for most TAC collections: set, map, array, queue, etc. and both for their instantiating and non-instantiating variants.
+
+
+g++
+#include "Instantiating.h"
+
+int main() {
+   MyType4::Ptr myType = Tac::allocate< MyType4 >();
+
+   // Instantiate a new instance of `MyRecord1` and insert it into the collection.
+   myType->fooIs( "first" );
+   auto iterator = myType->fooIterator();
+   std::transform( iterator.begin(),
+                   iterator.end(),
+                   TacCollInserter( *myType, barIs ),
+                   []( auto const & elem ) { return elem.ptr(); } );
+}
+When there are multiple constructor parameters of the destination type, the output iterator must be assigned a tuple of the desired constructor arguments. That tuple object is then std::apply-ed onto the insertion function behind the scenes. Given the following types:
+
+
+
+arcg
+MultiCtor.tac
+MultiCtorParam : Tac::Type( name, val, val2 ) : Tac::PtrInterface {
+   name : Tac::String;
+   val : U32;
+   val2 : Tac::String;
+}
+
+MyType6 : Tac::Type() : Tac::PtrInterface {
+   // An instantiating collection, with multiple parameters
+   foo : MultiCtorParam[ name ];
+}
+We can use the inserter as:
+
+
+g++
+#include "MultiCtor.h"
+
+int main() {
+   MyType6::Ptr myType = Tac::allocate< MyType6 >();
+   std::vector< std::tuple< std::string, int, std::string > > triplets{
+      { "a", 1, "A" }, { "b", 2, "B" }, { "c", 3, "C" }
+   };
+   std::copy( triplets.begin(), triplets.end(), TacCollInserter( *myType, fooIs ) );
+}

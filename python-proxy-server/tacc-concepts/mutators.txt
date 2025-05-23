@@ -1,0 +1,12 @@
+Accessors and Mutators
+Attributes of a type should never be directly modified.  All interaction is done via accessors and mutators (getters and setters).
+MyRoute1 : Tac::Type( prio ) : Tac::Nominal {
+   // priority
+   prio : U32;
+   // weight
+   weight : U64;
+}
+
+MyRoute1 rt( 10 );
+std::cout << rt.prio() << std::endl; // call prio accessor
+rt.weightIs( 99 ); // Call the mutator to modify the weight

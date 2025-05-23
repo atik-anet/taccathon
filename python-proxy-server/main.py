@@ -90,6 +90,35 @@ def get_tree_folders(directory: str):
     except Exception as e:
         return f"Error generating directory tree: {str(e)}"
 
+# symbol search in path
+@app.get("/learn")
+def learn():
+   """
+   Learn tacc concepts
+   
+   Args:
+      No Args
+   
+   Returns:
+      A text which explains basic tacc syntax
+   """
+   # Set the folder path
+   folder_path = "./tacc-concepts/"
+
+   # Initialize a string to hold the cumulative text
+   cumulative_text = ""
+
+   # Loop through all files in the folder
+   for filename in os.listdir(folder_path):
+      if filename.endswith(".txt"):
+         file_path = os.path.join(folder_path, filename)
+         with open(file_path, 'r', encoding='utf-8') as file:
+               cumulative_text += file.read() + "\n"  # Add a newline between files
+
+   # Create the JSON object
+   result = {"tacc-result": cumulative_text.strip()}
+   return result
+
 @app.get("/test")
 async def root():
     return {"message": "Hello World from old python container"}

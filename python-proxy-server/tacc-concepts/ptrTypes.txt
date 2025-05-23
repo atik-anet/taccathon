@@ -1,0 +1,73 @@
+Pointer types: PtrInterface and Entity
+The PtrInterface and Entity types are closely related. Tac::Entity is a subclass of Tac::PtrInterface and shares many characteristics:
+
+pointers are passed as function parameters and return values
+virtual functions are supported
+inheritance is supported
+ownership is shared via reference-counting with Tac::Ptr
+Tac::PtrInterface:
+
+is non-notifying by default, but it can be enabled
+doesn't support AttrLog
+Tac::Entity:
+
+notifying by default
+supports AttrLog at the granularity of individual attributes or collection elements
+can be inserted into Tac::Dir
+uses more memory than Tac::PtrInterface
+has more generated code than Tac::PtrInterface
+Choosing between PtrInterface and Entity
+Use Tac::Entity when you need values of the type to be synchronized outside of the agent via AttrLog or need to store it in a Tac::Dir.
+
+Also use Tac::Entity if needed for use with when statements, as these can leverage the parent pointer in entities.
+
+Tac::Entity uses more memory and generates a lot more C++ code, resulting in longer compilation times and larger binaries.
+
+Use Tac::PtrInterface for all objects local to the agent, enabling notifications if required.
+
+Type	Base size in bytes (32 b / 64 b)	AttrLog?	Per-attribute notification ?	Passed by pointer or value
+Tac::PtrInterface	8 / 16	No	No	Pointer
+Tac::PtrInterface with `isNotifyingByDefault;	12 / 24	No	Yes	Pointer
+Tac::Entity with `isNotifyingByDefault=false;	16 / 32	No	No	Pointer
+Tac::Entity	20 / 40	Yes	Yes	Pointer
+Tac::Nominal	0	Yes	No	Value
+Tac::Ordinal	0	Yes	No	Value
+Note that
+
+taccExtension << "attrLog";
+needs to be specified at the top of a .tac file to enable code-generation for AttrLog.
+
+Tac::Ptr
+Tac::Ptr is the pointer type used for Tac::PtrInterface, Tac::Entity, and Tac::Constrainer types. Each instance of a Tac::Ptr increments an intrusive reference-count of the object it points to. When the last reference goes away, the object is destroyed and the memory is released. A "raw" pointer is available via Tac::Ptr::ptr().
+
+Constructor arguments
+The constructor for a Pointer type is defined based on the Tac::Type section of the type definition, and can be either explicit or implicit.
+
+An explicit constructor will list the constructor arguments that must be passed when constructing an object of this type, inside parentheses. As an example:
+
+
+arcg
+PointerTypes : Tac::Type( a ) : Tac::PtrInterface {
+   a : U32;
+   b : Tac::String;
+}
+This type specifies attribute a as the only constructor argument. This attribute must be passed when constructing the value, or when creating this type via an instantiating collection or singleton.
+
+The a attribute is also made immutable by default, allowing it to be used as a collection key for an internally keyed collection. (It can be made mutable again using the \=;` trait).
+
+For a type with no parentheses, we instead have implicitly defined constructor arguments, based on the parent type. As an example:
+
+
+arcg
+BaseType : extensible Tac::Type( a ) : Tac::PtrInterface {
+   a : U32;
+   b : Tac::String;
+}
+DerivedType : Tac::Type : BaseType {
+   c : U64;
+}
+Here, DerivedType will have one constructor argument, a, inherited from BaseType.
+
+Note that PtrInterface has no constructor arguments, so a type dervied from it with implicit constructor arguments will have a no-arg constructor.
+
+A type derived from Entity directly will have a single constructor argument, name. It is recommended to be explicit with types deriving from Entity, rather than implicit because of this.
