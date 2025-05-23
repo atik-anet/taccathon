@@ -1,0 +1,14 @@
+Hi can you learn tacc concepts
+
+Can you read file in this path /eos-trunk/src/SandTunnel/PriorityTagSm.tac
+
+Can you read its corresponding tin file
+
+search for PortEmAccCmdConfig symbol in path /eos-trunk/src/
+
+can you identify all the files/Sm's that are publishing PortEmAccCmdConfig
+
+Can you write a simple tac and tin skeleton,
+the tac file should have a counter attribute and a method to increment the counter. Keep it simple
+
+can you improve it by adding a constrainer that reacts to the counter config and publishes a status

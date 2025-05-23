@@ -1,0 +1,38 @@
+// Copyright (c) 2024 Arista Networks, Inc.  All rights reserved.
+// Arista Networks, Inc. Confidential and Proprietary.
+
+// Include necessary headers
+#include <Tac/Log.h>
+#include <Tac/Tracing.h>
+
+// Define the namespace matching the .tac file
+namespace MyModule {
+
+// No specific implementation needed for a simple data type with no methods
+// The 'counter' member is automatically handled by the Tac framework.
+
+// Implementation of the incrementCounter method
+void
+MyConfigType::incrementCounter() {
+   counter++;
+}
+
+// Implementation for MyStatusType (simple data type, no methods needed)
+// The 'currentCounterValue' member is automatically handled by the Tac framework.
+
+// Implementation for MyConstrainer
+void
+MyConstrainer::handleCounterUpdate() {
+   // Update the status with the current counter value from the config
+   myStatus()->currentCounterValueIs( myConfig()->counter() );
+   // Log the update (optional, for debugging/tracing)
+   // TRACE8("Counter updated to: " << myConfig()->counter());
+}
+
+void
+MyConstrainer::handleInitialized() {
+   // Perform initial update of the status when the constrainer is initialized
+   handleCounterUpdate();
+}
+
+} // namespace MyModule
