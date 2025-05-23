@@ -1,0 +1,25 @@
+Hi can you learn tacc concepts
+
+Can you get the tree directory structure of SandTunnel
+
+Can you read file in this path /eos-trunk/src/SandTunnel/PriorityTagSm.tac
+
+Whats its corresponding tin file?
+
+Can you read it
+
+Summarize what this tac and tin files are doing?
+
+Can you identify and understand the corresponding test file written in this directory /eos-trunk/src/SandTunnel/test/
+
+Based on tac,tin,test file are you able to understand it better
+
+Tell me under what conditions does priorityTagSm publish a PortEmAccCmdConfig
+
+Where is this PortEmAccCmdConfig class defined?
+
+What happens when PriorityTagSm publishes a  PortEmAccCmdConfig?
+
+What are all the available Jericho2EsemCmds?
+
+search for PortEmAccCmdConfig symbol in a relevant path using searchSymbolInPath and find out which other Sm's are publishing PortEmAccCmdConfig

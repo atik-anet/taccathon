@@ -1,0 +1,95 @@
+Reactors
+Basic reactors
+At Arista, most of the "business logic" is performed by state machines. These have the type Tac::Constrainer in TAC. Notifications are always immediate.
+
+.tac:
+
+
+arcg
+BasicRecord : Tac::Type( name ) : Tac::PtrInterface {
+   `isNotifyingByDefault;
+   name : Tac::String;
+   accelerated : bool;
+}
+// `Tac::Constrainer` can be thought of as a state machine that takes one or more
+// inputs and implements a reactor.
+BasicSm : Tac::Type( entity ) : Tac::Constrainer {
+   entity : in BasicRecord::PtrConst;
+   // A non-const function that is implemented via `.tin` and `.itin` files. It
+   // returns no values and takes no parameters.
+   reactor : extern invasive void();
+   // Invoke `reactor()` whenever `entity::accelerated` changes.
+   entity::accelerated => reactor();
+}
+.tin:
+
+void
+BasicSm::reactor() {
+   if ( entity()->accelerated() ) {
+      // ...
+   } else {
+      // ...
+   }
+}
+Collection reactors
+Changes to collections are handled with a reactor that gets invoked with a specific key. The user-provided implementation must perform a collection membership check to determine if the value was added or deleted.
+
+.tac:
+
+
+arcg
+MyRecord : Tac::Type( name ) : Tac::PtrInterface {
+   `isNotifyingByDefault;
+   name : Tac::String;
+   a : U32;
+   b : U32;
+   c : U32;
+}
+MyType : Tac::Type() : Tac::PtrInterface {
+   `isNotifyingByDefault;
+   // An instantiating collection.
+   foo : MyRecord[ name ];
+   // A non-instantiating collection.
+   bar : MyRecord::Ptr[ Tac::String ];
+}
+CollSm : Tac::Type( input ) : Tac::Constrainer {
+   input : in MyType::PtrConst;
+   // The `handleFoo()` reactor is invoked whenever a value is added or removed from
+   // the collection.
+   handleFoo : extern invasive void( name : Tac::String );
+   input::foo[ name ] => handleFoo( name );
+   // This overload of `handleFoo()` is invoked when `CollSm` is created.
+   handleFoo : extern invasive overloading void();
+   input::foo[] => initially handleFoo();
+   handleBar : extern invasive void( name : Tac::String );
+   input::bar[ name ] => handleBar( name );
+}
+.tin:
+
+void
+CollSm::handleFoo() {
+   // ...
+}
+void
+CollSm::handleFoo( Tac::String const & name ) {
+   // Since `foo` is an instantiating collection, if the key is in the collection
+   // then it must have been added.
+   if ( input()->fooHas( name ) ) {
+      // ...
+   } else {
+      // `name` was just removed from the collection.
+      // ...
+   }
+}
+void
+CollSm::handleBar( Tac::String const & name ) {
+   if ( input()->barHas( name ) ) {
+      // Either a value corresponding to the `name` key has been added, or an
+      // existing value has been modified.
+      // ...
+   } else {
+      // The value corresponding to `name` has just been removed from the collection.
+      // ...
+   }
+}
+Note that reactors with empty braces get invoked during the state-machine's creation. They may be used to handle keys already present. Without the initially keyword, the reactor gets invoked when the notifier is updated after the constrainer has started. Therefore, such a reactor is a no-op if the notifier is immutable. The compiler signals an error for such cases.

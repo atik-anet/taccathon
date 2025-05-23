@@ -1,0 +1,134 @@
+Value types: nominal and ordinal
+Two flavors of value types exist: Tac::Nominal and Tac::Ordinal. They are identical except that nominal types only support equality comparison, while ordinal types additionally support comparison operators such as <=.
+
+In general, value types:
+
+are passed by value or constant reference as parameters to functions
+are returned by value from functions
+have no virtual function support
+must be modified as a single unit
+Be careful when defining a value type as a subclass of another value type, since slicing concerns are applicable just as with C++. For example, if a derived value type is passed by value to a function taking its base value type, the derived type will be sliced down to the base value type when it's copied. The same can occur when assigning a derived value type to an instance of the base value type. In many cases, using composition and not inheritance is preferable.
+
+Value types support the notification mechanism and AttrLog, with a caveat: an update is at the granularity of the entire type. Notifications are not supported for individual attributes. For example, any change to an attribute within a value type causes the whole value to be sent over AttrLog.
+
+
+arcg
+// This type will have equality operators.
+NominalType : Tac::Type() : Tac::Nominal {
+   attr : U32;
+}
+// This type will have equality and comparison operators.
+OrdinalType : Tac::Type() : Tac::Ordinal {
+   attr : U32;
+}
+Value types used as indices into collections (even unordered ones) need to support comparison operators, so they need to be Tac::Ordinal.
+
+Value types used as indices into unordered collections need to support hashing. The recommended way to do this is to use `hasDefaultHash.
+
+
+arcg
+OrdinalTypeWithHash : Tac::Type() : Tac::Ordinal {
+   `hasDefaultHash;
+   attr : U32;
+}
+Constructor Arguments
+Value types have two related ways of defining constructor arguments, both around the Tac::Type portion of their declaration.
+
+These are:
+
+Explicit constructor arguments
+Implicit constructor arguments
+All Value Types additionally generate a no-argument constructor, which is used to produce the somewhat special "default value" for the type.
+
+The following is an example of a type with explicit constructor arguments:
+
+
+arcg
+ExplicitCtorArgs : Tac::Type( a, b ) : Tac::Nominal {
+   a : U32;
+   b : Tac::String;
+   c : S64;
+}
+This will lead to generating a constructor that requires two arguments, a U32 and a string. These attributes of the Value Type will also be immutable after construction (No aIs or bIs generated).
+
+As a minor note, one-argument constructors are not marked as explicit, and may lead to implicit conversions.
+
+If we look at a type with implicit constructor arguments instead:
+
+
+arcg
+ImplicitCtorArgs : Tac::Type : Tac::Nominal {
+   a : U32;
+   b : Tac::String;
+   c : S64;
+}
+Note how here, we do not have any parentheses at all after the Tac::Type. This leads to all attributes in the type being included in the constructor, and all of these attributes also being mutable, as opposed to immutable (e.g. aIs, bIs, and cIs are all generated).
+
+Arithmetic operators
+Value types can support the following arithmetic operators: + - & | ^ * %
+
+These arithmetic operators ( <op> ) as well as their corresponding assignment operators ( <op>= ) can either be automatically generated or user defined.
+
+In order to automatically generate arithmetic operators, the following statement needs to be added to the TAC definition of the value type: operator <op>;
+
+The corresponding assignment operators can also be automatically generated using: operator <op>=;
+
+When automatically generating either the arithmetic operator or its corresponding assignment operator, TACC will also automatically generate the other operator if it does not have a user definition.
+
+A full example can be seen below:
+
+
+arcg
+NominalTypeWithAutoOp : Tac::Type() : Tac::Nominal {
+   attr : U32;
+   operator |; // This will also automatically generate the |= operator.
+   operator +=; // This will also automatically generate the + operator.
+   // This is more explicit and thus is preferred.
+   operator &;
+   operator &=;
+}
+In order to generate custom definitions for the arithmetic operators or their corresponding assignment operators, the following statement needs to be added to the TAC definition of the value type: operator <op> : extern;
+
+Unlike the automatic arithmetic operator generation, using a custom definition of either the arithmetic operator or its corresponding assignment operator will not result in the automatic generation of the other operator.
+
+The implementation of the automatically generated arithmetic operator relies on the corresponding assignment operator. Thus, users only need to specify custom definitions for the assignment operator and can rely on the automatic definition of the corresponding arithmetic operator.
+
+For custom arithmetic operators, a C++ definition which implements the following method signature needs to be provided: <Type> <Type>::operator<op>( <Type> const & t ) const
+
+For the corresponding assignment operators, a C++ definition which implements the following method signature needs to be provided: <Type>& <Type>::operator<op>=( <Type> const & t )
+
+If `passByValue=false; is not specified and the size of the type is small enough, then the TACC compiler might opt to pass it by value rather than by reference as an optimization. In such cases, the operator signatures need to be modified accordingly ( taking in <Type> instead of <Type> const & ).
+
+A full example can be seen below:
+
+
+arcg
+NominalTypeWithCustomOp : Tac::Type() : Tac::Nominal {
+   attr1 : U64;
+   attr2 : U64;
+   operator | : extern; // The |= operator will not be automatically generated.
+   operator += : extern; // The + operator will not be automatically generated.
+   // The automatically generated & operator will use the custom defined &= operator.
+   operator &= : extern;
+   operator &;
+}
+NominalTypeWithCustomOp
+NominalTypeWithCustomOp::operator|( NominalTypeWithCustomOp const & other ) const {
+   NominalTypeWithCustomOp retVal{ *this };
+   // This custom implementation only |'s attr1.
+   retVal.attr1Is( attr1() | other.attr1() );
+   return retVal;
+}
+NominalTypeWithCustomOp &
+NominalTypeWithCustomOp::operator+=( NominalTypeWithCustomOp const & other ) {
+   // This custom implementation "cross" adds attr1 and attr2.
+   attr1Is( attr1() + other.attr2() );
+   attr2Is( attr2() + other.attr1() );
+   return *this;
+}
+NominalTypeWithCustomOp &
+NominalTypeWithCustomOp::operator&=( NominalTypeWithCustomOp const & other ) {
+   attr1Is( attr1() & other.attr1() );
+   attr2Is( attr2() & other.attr2() );
+   return *this;
+}

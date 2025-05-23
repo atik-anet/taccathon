@@ -48,9 +48,7 @@ def read_file(file_path: str ):
     Returns:
         The file content in json format or an error message.
     """
-    file_path = file_path.split('/')
-    final_file_path = '/'.join(file_path[4:])
-    url = f"http://{ip}:{port}/read?file_path={final_file_path}"
+    url = f"http://{ip}:{port}/read?file_path={file_path}"
     try:
         response = requests.get(url) 
         response.raise_for_status() 
@@ -107,5 +105,31 @@ def searchSymbolInPath(path:str, symbol: str ):
        print(e)
        print(url)
        return {"exception":"couldnot find"}
+
+@mcp.tool()
+def learn_tacc_concepts():
+    """
+    Learn tacc conceptsI
+    
+    Args:
+        No Args
+    
+    Returns:
+        A text which explains basic tacc syntax
+    """
+    url = f"http://{ip}:{port}/learn"
+    try:
+        response = requests.get(url) 
+        response.raise_for_status() 
+        data = response.json()
+        return data
+    except requests.exceptions.RequestException as e:
+       print(e)
+       print(url)
+       return {"exception":"couldnot find"}
+
+
+
+
 
 app.mount("/", mcp.sse_app())

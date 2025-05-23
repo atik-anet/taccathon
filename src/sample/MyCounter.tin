@@ -1,0 +1,14 @@
+// Copyright (c) 2024 Arista Networks, Inc.  All rights reserved.
+// Arista Networks, Inc. Confidential and Proprietary.
+
+#include "MyCounter.h"
+
+void
+MyCounter::increment() {
+   counterIs( counter() + 1 );
+}
+
+void
+MyCounterReactor::handleCounterChange() {
+   counterStatus()->currentCountIs( counterConfig()->counter() );
+}
